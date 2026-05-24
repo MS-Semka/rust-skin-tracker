@@ -10,7 +10,7 @@
 - Microsoft Edge браузер (для Selenium fallback)
 - `msedgedriver.exe` в папке проекта (версия должна совпадать с Edge)
 
-## Установка
+## Установка необходимых библиотек
 
 pip install -r requirements.txt
 

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RUST Skin Tracker V5</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0f1117;
+      --bg-card:      #1a1d27;
+      --bg-input:     #12141e;
+      --border:       #2a2d3e;
+      --text:         #e2e8f0;
+      --text-muted:   #64748b;
+      --accent:       #f97316;
+      --accent-hover: #ea6c0a;
+      --danger:       #ef4444;
+      --danger-hover: #dc2626;
+      --radius:       10px;
+      --font:         'Segoe UI', system-ui, sans-serif;
+      --c-red:    #ef4444;
+      --c-grey:   #6b7280;
+      --c-orange: #f97316;
+      --c-yellow: #eab308;
+      --c-green:  #22c55e;
+      --c-blue:   #3b82f6;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    header { text-align: center; margin-bottom: 28px; }
+    header h1 { font-size: 26px; font-weight: 700; letter-spacing: 1px; color: var(--accent); }
+    header p  { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .card h2 {
+      font-size: 13px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .8px;
+      color: var(--text-muted); margin-bottom: 16px;
+    }
+
+    .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+    .field input {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 8px 12px;
+      width: 130px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .field input:focus { border-color: var(--accent); }
+
+    .btn {
+      padding: 9px 20px; border: none; border-radius: 7px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background .2s, opacity .2s; white-space: nowrap;
+    }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-start  { background: var(--accent); color: #fff; }
+    .btn-start:hover:not(:disabled)  { background: var(--accent-hover); }
+    .btn-delete { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-delete:hover:not(:disabled) { background: var(--danger); color: #fff; }
+
+    .status-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 10px; }
+    #status-text { font-size: 13px; color: var(--text-muted); flex: 1; min-width: 180px; }
+    #last-run    { font-size: 12px; color: var(--text-muted); }
+
+    .progress-wrap {
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 99px; height: 10px; overflow: hidden;
+    }
+    #progress-bar {
+      height: 100%; width: 0%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--accent), #fbbf24);
+      transition: width .4s ease;
+    }
+    #progress-label { font-size: 12px; color: var(--text-muted); text-align: right; margin-top: 4px; }
+
+    .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    #results-count { font-size: 12px; color: var(--text-muted); }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      text-align: left; padding: 9px 12px;
+      color: var(--text-muted); font-weight: 600; font-size: 11px;
+      text-transform: uppercase; letter-spacing: .6px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap; cursor: pointer; user-select: none;
+    }
+    thead th:hover { color: var(--text); }
+    thead th .sort-arrow { margin-left: 4px; opacity: .4; }
+    thead th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody td { padding: 9px 12px; white-space: nowrap; }
+
+    td.skin-name { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .indicator-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+    .color-red    { color: var(--c-red);    } .dot-red    { background: var(--c-red);    }
+    .color-grey   { color: var(--c-grey);   } .dot-grey   { background: var(--c-grey);   }
+    .color-orange { color: var(--c-orange); } .dot-orange { background: var(--c-orange); }
+    .color-yellow { color: var(--c-yellow); } .dot-yellow { background: var(--c-yellow); }
+    .color-green  { color: var(--c-green);  } .dot-green  { background: var(--c-green);  }
+    .color-blue   { color: var(--c-blue);   } .dot-blue   { background: var(--c-blue);   }
+
+    .empty-state { text-align: center; padding: 40px 0; color: var(--text-muted); }
+    .empty-state p { margin-top: 8px; font-size: 13px; }
+
+    #error-box {
+      display: none;
+      background: rgba(239,68,68,.1);
+      border: 1px solid var(--danger);
+      border-radius: 7px;
+      color: var(--danger);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>⚙ RUST Skin Tracker <span style="color:var(--text-muted)">V5</span></h1>
+    <p>lis-skins.com → Steam Market · анализ прибыльности</p>
+  </header>
+
+  <!-- ── Панель управления ────────────────────────────────── -->
+  <div class="card">
+    <h2>Параметры парсинга</h2>
+    <div class="controls">
+      <div class="field">
+        <label for="inp-limit">Количество скинов</label>
+        {# Значение берётся из config.ITEMS_TO_PARSE через Flask #}
+        <input id="inp-limit" type="number" value="{{ cfg_limit }}" min="1" max="500" />
+      </div>
+      <div class="field">
+        <label for="inp-min">Мин. цена (₽)</label>
+        {# Значение берётся из config.MIN_PRICE через Flask #}
+        <input id="inp-min" type="number" value="{{ cfg_min_price }}" min="0" />
+      </div>
+      <div class="field">
+        <label for="inp-max">Макс. цена (₽)</label>
+        {# Значение берётся из config.MAX_PRICE через Flask #}
+        <input id="inp-max" type="number" value="{{ cfg_max_price }}" min="0" />
+      </div>
+      <button id="btn-start"  class="btn btn-start"  onclick="startParser()">🚀 Запустить</button>
+      <button id="btn-delete" class="btn btn-delete" onclick="clearData()">🗑 Удалить данные</button>
+    </div>
+    <div id="error-box"></div>
+  </div>
+
+  <!-- ── Статус и прогресс ────────────────────────────────── -->
+  <div class="card">
+    <h2>Статус</h2>
+    <div class="status-row">
+      <div id="status-text">Ожидание запуска</div>
+      <div id="last-run"></div>
+    </div>
+    <div class="progress-wrap">
+      <div id="progress-bar"></div>
+    </div>
+    <div id="progress-label">0%</div>
+  </div>
+
+  <!-- ── Таблица результатов ──────────────────────────────── -->
+  <div class="card">
+    <div class="table-header">
+      <h2 style="margin-bottom:0">Результаты</h2>
+      <span id="results-count">—</span>
+    </div>
+    <div class="table-wrap">
+      <table id="results-table">
+        <thead>
+          <tr>
+            <th data-col="i">№</th>
+            <th data-col="skin_name">Скин</th>
+            <th data-col="lisskins_buy_commission">Цена lis-skins <span class="sort-arrow">↕</span></th>
+            <th data-col="steam_sell_commission">Цена Steam <span class="sort-arrow">↕</span></th>
+            <th data-col="price_difference">Разница цен <span class="sort-arrow">↕</span></th>
+            <th data-col="percentage_indicator" class="sorted">% <span class="sort-arrow">↓</span></th>
+            <th data-col="color_indicator">Индикатор</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div style="font-size:32px">📋</div>
+                <p>Нет данных. Запустите парсер.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+  const COLOR_LABELS = {
+    red:    'Убыточно',
+    grey:   'Небольшая прибыль',
+    orange: 'Хорошая прибыль',
+    yellow: 'Очень хорошая прибыль',
+    green:  'Отличная прибыль',
+    blue:   'Превосходная прибыль',
+  };
+
+  let _polling  = null;
+  let _sortCol  = 'percentage_indicator';
+  let _sortAsc  = false;
+  let _tableData = [];
+
+  // ── Форматирование ────────────────────────────────────────
+  function fmtPrice(v) {
+    if (v === null || v === undefined) return '<span style="color:var(--text-muted)">—</span>';
+    return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v) + ' ₽';
+  }
+
+  function fmtDiff(v) {
+    if (v === null || v === undefined) return '<span style="color:var(--text-muted)">—</span>';
+    const sign = v >= 0 ? '+' : '';
+    const cls  = v >= 0 ? 'color-green' : 'color-red';
+    return `<span class="${cls}">${sign}${new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)} ₽</span>`;
+  }
+
+  function fmtPct(v) {
+    if (v === null || v === undefined) return '<span style="color:var(--text-muted)">—</span>';
+    const pct = v * 100;
+    const cls = pct >= 0 ? 'color-green' : 'color-red';
+    return `<span class="${cls}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</span>`;
+  }
+
+  function fmtIndicator(color) {
+    if (!color) return '—';
+    return `<span class="indicator-dot dot-${color}"></span><span class="color-${color}">${COLOR_LABELS[color] || color}</span>`;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Ошибки ────────────────────────────────────────────────
+  function showError(msg) {
+    const box = document.getElementById('error-box');
+    box.textContent = '⚠ ' + msg;
+    box.style.display = 'block';
+  }
+  function hideError() { document.getElementById('error-box').style.display = 'none'; }
+
+  // ── Прогресс ──────────────────────────────────────────────
+  function setProgress(pct, msg) {
+    document.getElementById('progress-bar').style.width   = pct + '%';
+    document.getElementById('progress-label').textContent = pct + '%';
+    document.getElementById('status-text').textContent    = msg;
+  }
+
+  // ── Поллинг статуса ───────────────────────────────────────
+  function startPolling() { if (!_polling) _polling = setInterval(pollStatus, 1000); }
+  function stopPolling()  { if (_polling) { clearInterval(_polling); _polling = null; } }
+
+  async function pollStatus() {
+    try {
+      const data = await fetch('/api/status').then(r => r.json());
+      setProgress(data.progress || 0, data.message || '');
+      if (data.last_run) document.getElementById('last-run').textContent = 'Последний запуск: ' + data.last_run;
+      if (data.last_error) showError(data.last_error);
+      if (!data.running) {
+        stopPolling();
+        setButtons(false);
+        if (data.progress === 100) await loadResults();
+      }
+    } catch (e) { console.error('Ошибка опроса статуса:', e); }
+  }
+
+  // ── Управление кнопками ───────────────────────────────────
+  function setButtons(parserRunning) {
+    ['btn-start','btn-delete','inp-limit','inp-min','inp-max']
+      .forEach(id => document.getElementById(id).disabled = parserRunning);
+  }
+
+  // ── Запуск парсера ────────────────────────────────────────
+  async function startParser() {
+    hideError();
+    const limit    = parseInt(document.getElementById('inp-limit').value);
+    const minPrice = parseFloat(document.getElementById('inp-min').value);
+    const maxPrice = parseFloat(document.getElementById('inp-max').value);
+
+    try {
+      const data = await fetch('/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit, min_price: minPrice, max_price: maxPrice }),
+      }).then(r => r.json());
+
+      if (!data.ok) { showError(data.message); return; }
+      setButtons(true);
+      setProgress(0, 'Запуск...');
+      startPolling();
+    } catch (e) { showError('Не удалось подключиться к серверу: ' + e.message); }
+  }
+
+  // ── Удаление данных ───────────────────────────────────────
+  async function clearData() {
+    if (!confirm('Удалить все данные из prices.db?')) return;
+    try {
+      const data = await fetch('/api/clear', { method: 'POST' }).then(r => r.json());
+      if (!data.ok) { showError(data.message); return; }
+      setProgress(0, 'Данные удалены');
+      document.getElementById('last-run').textContent = '';
+      renderTable([]);
+    } catch (e) { showError('Ошибка при удалении: ' + e.message); }
+  }
+
+  // ── Загрузка и рендер таблицы ─────────────────────────────
+  async function loadResults() {
+    try {
+      const data = await fetch('/api/results').then(r => r.json());
+      if (!data.ok) { showError(data.message); return; }
+      _tableData = data.data || [];
+      renderTable(_tableData);
+    } catch (e) { showError('Ошибка загрузки данных: ' + e.message); }
+  }
+
+  function renderTable(rows) {
+    const countEl = document.getElementById('results-count');
+    const tbody   = document.getElementById('table-body');
+
+    if (!rows || rows.length === 0) {
+      countEl.textContent = '0 скинов';
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div style="font-size:32px">📋</div><p>Нет данных. Запустите парсер.</p></div></td></tr>`;
+      return;
+    }
+
+    const sorted = [...rows].sort((a, b) => {
+      let va = a[_sortCol], vb = b[_sortCol];
+      if (va === null || va === undefined) return 1;
+      if (vb === null || vb === undefined) return -1;
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      if (va < vb) return _sortAsc ? -1 : 1;
+      if (va > vb) return _sortAsc ?  1 : -1;
+      return 0;
+    });
+
+    countEl.textContent = rows.length + ' скинов';
+    tbody.innerHTML = sorted.map((row, i) => `
+      <tr>
+        <td style="color:var(--text-muted)">${i + 1}</td>
+        <td class="skin-name" title="${escHtml(row.skin_name)}">${escHtml(row.skin_name)}</td>
+        <td class="num">${fmtPrice(row.lisskins_buy_commission)}</td>
+        <td class="num">${fmtPrice(row.steam_sell_commission)}</td>
+        <td class="num">${fmtDiff(row.price_difference)}</td>
+        <td class="num">${fmtPct(row.percentage_indicator)}</td>
+        <td>${fmtIndicator(row.color_indicator)}</td>
+      </tr>`).join('');
+  }
+
+  // ── Сортировка по заголовку ───────────────────────────────
+  document.querySelectorAll('thead th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (col === 'i') return;
+      _sortAsc = (_sortCol === col) ? !_sortAsc : col === 'skin_name';
+      _sortCol = col;
+      document.querySelectorAll('thead th').forEach(h => {
+        h.classList.remove('sorted');
+        const a = h.querySelector('.sort-arrow');
+        if (a) a.textContent = '↕';
+      });
+      th.classList.add('sorted');
+      const arrow = th.querySelector('.sort-arrow');
+      if (arrow) arrow.textContent = _sortAsc ? '↑' : '↓';
+      renderTable(_tableData);
+    });
+  });
+
+  // ── Инициализация ─────────────────────────────────────────
+  (async function init() {
+    await loadResults();
+    const status = await fetch('/api/status').then(r => r.json()).catch(() => null);
+    if (status && status.running) {
+      setButtons(true);
+      setProgress(status.progress, status.message);
+      startPolling();
+    }
+  })();
+</script>
+</body>
+</html>

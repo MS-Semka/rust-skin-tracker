@@ -1,0 +1,45 @@
+# ══════════════════════════════════════════
+#   RUST Skin Tracker V5 — .gitignore
+# ══════════════════════════════════════════
+
+# ── База данных (содержит личные данные о сделках) ──
+prices.db
+
+# ── Steam cookies (чувствительные данные авторизации) ──
+config/cookies.json
+cookies.json
+
+# ── Логи ──
+*.log
+
+# ── Debug-файлы парсера ──
+debug_page.html
+debug_page_selenium.html
+debug_fetched_page.html
+
+# ── пример исходной страницы Steam ──
+Page source code.txt
+
+# ── Python кэш ──
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ── Виртуальное окружение ──
+venv/
+.venv/
+env/
+ENV/
+
+# ── IDE ──
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+
+# ── Временные файлы ──
+*.tmp
+*.bak
+data/

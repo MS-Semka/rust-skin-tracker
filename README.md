@@ -16,7 +16,7 @@ pip install -r requirements.txt
 
 ## Запуск
 
-Запускаем python web_app.py
+Запускаем python **web_app.py**
 Затем открыть браузер: http://127.0.0.1:5000
 
 ### Типичный рабочий цикл
